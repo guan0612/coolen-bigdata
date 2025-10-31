@@ -8,257 +8,53 @@ import time
 
 from backend.database.config import Config
 from backend.database.service_lab import ServiceLAB
-from backend.database.service_ncu import ServiceNCU
+#from backend.database.service_ncu import ServiceNCU
 
 db_lab = ServiceLAB()
-db_ncu = ServiceNCU()
+# db_ncu = ServiceNCU()
 
 
 class Bigdata:
     def __init__(self):
         self.system_time = time.strftime("%Y-%m-%d-%H%M%S", time.localtime())
-        self.filepath = Config.PROGRESS_FILE_PATH
+        # self.filepath = Config.PROGRESS_FILE_PATH
+        self.filepath = "/app/data/progressing/2025_06_10"
         self.complete = Config.COMPLETED_FILE_PATH
         self.searchPath = self.filepath + '*.json'
-        # self.fixedFilePath = Config.FILE_PATH + 'fixed\\'
-        # self.searchFixedPath = self.fixedFilePath + '*.json'
-
-    # def fixLogData(self):
-    #     if not os.path.exists(self.fixedFilePath):
-    #         os.makedirs(self.fixedFilePath)
-    #
-    #     partFile = dict()
-    #     for jsonFile in glob.glob(self.searchPath):
-    #         filename = os.path.basename(jsonFile)
-    #         basename = filename.split('_')[0]
-    #         print(filename)
-    #
-    #         fix = self.fixedFilePath + filename
-    #         if fix in glob.glob(self.searchFixedPath):
-    #             continue
-    #
-    #         if 'of' in filename:
-    #             if basename not in partFile.keys():
-    #                 partFile[basename] = list()
-    #                 partFile[basename].append(filename)
-    #             else:
-    #                 partFile[basename].append(filename)
-    #         else:
-    #             # 修復JSON錯誤格式
-    #             with open(jsonFile, 'r', encoding='utf-8') as f:
-    #                 raw = '[' + f.read() + ']'
-    #                 raw = raw.replace('}\n{', '},\n{').replace('}\nnull\n{', '},\n{')
-    #                 # 儲存為標準 JSON 格式
-    #                 fixedFile = self.fixedFilePath + filename
-    #                 with open(fixedFile, 'w', encoding='utf-8') as out:
-    #                     data = json.loads(raw)
-    #                     json.dump(data, out, ensure_ascii=False, indent=4)
-    #     print(partFile)
-    #
-    #     for basename in partFile:
-    #         raw = ''
-    #         for filename in partFile[basename]:
-    #             index = partFile[basename].index(filename)
-    #             file = self.filepath + filename
-    #             if index == 0:
-    #                 with open(file, 'r', encoding='utf-8') as f:
-    #                     raw = '[' + f.read()
-    #                     raw = raw.replace('}\n{', '},\n{').replace('}\nnull\n{', '},\n{')
-    #             elif index == len(partFile[basename]) - 1:
-    #                 with open(file, 'r', encoding='utf-8') as f:
-    #                     raw = raw + f.read() + ']'
-    #                     raw = raw.replace('}\n{', '},\n{').replace('}\nnull\n{', '},\n{')
-    #             else:
-    #                 with open(file, 'r', encoding='utf-8') as f:
-    #                     raw = raw.replace('}\n{', '},\n{').replace('}\nnull\n{', '},\n{')
-    #
-    #         # 儲存為標準 JSON 格式
-    #         fixedFile = self.fixedFilePath + basename + '.json'
-    #         with open(fixedFile, 'w', encoding='utf-8') as out:
-    #             data = json.loads(raw)
-    #             json.dump(data, out, ensure_ascii=False, indent=4)
-
-    # def readFixedLogData(self):
-    #     for fixedFile in glob.glob(self.searchFixedPath):
-    #         with open(fixedFile, mode='r', encoding='utf-8') as file:
-    #             logList = json.load(file)
-    #             filename = os.path.basename(fixedFile)
-    #             for log in logList:
-    #                 timestamp = int(log['client_event_time'])
-    #                 dt = datetime.utcfromtimestamp(timestamp)
-    #
-    #                 ids = db_lab.getClientEventElementId()
-    #                 new = db_lab.checkClientEventNewRecord(dt, log['server_sign_token'])
-    #                 if new[0] == 0:
-    #                     actor_id = int(ids[0]) + 1
-    #                     action_id = int(ids[1]) + 1
-    #                     result_id = int(ids[2]) + 1
-    #                 else:
-    #                     actor_id = int(ids[0])
-    #                     action_id = int(ids[1])
-    #                     result_id = int(ids[2])
-    #
-    #                 client_event = dict()
-    #                 client_event['client_event_time'] = dt
-    #                 client_event['server_sign_token'] = log['server_sign_token']
-    #                 client_event['encrypt'] = log['encrypt']
-    #                 client_event['actor_id'] = actor_id
-    #                 client_event['action_id'] = action_id
-    #                 client_event['result_id'] = result_id
-    #                 client_event['filename'] = filename
-    #                 print(client_event)
-    #                 db_lab.insertDataToClientEvent(client_event)
-    #                 db_ncu.insertDataToClientEvent(client_event)
-    #
-    #                 ids = db_lab.getActorElementId()
-    #                 tanet_info_id = None
-    #                 if log['actor']['login_method'] == 'TANET':
-    #                     tanet_info_id = int(ids[0]) + 1
-    #                     tanet_info = dict()
-    #                     tanet_info['tanet_info_id'] = tanet_info_id
-    #                     tanet_info['id'] = log['actor']['tanet_info']['id']
-    #                     tanet_info['uid'] = log['actor']['tanet_info']['userid']
-    #                     tanet_info['sub'] = log['actor']['tanet_info']['sub']
-    #                     timestamp = int(log['actor']['tanet_info']['timecreated'])
-    #                     dt = datetime.fromtimestamp(timestamp)
-    #                     tanet_info['timecreated'] = dt
-    #                     tanet_info['schoolid'] = log['actor']['tanet_info']['schoolid']
-    #                     tanet_info['grade'] = log['actor']['tanet_info']['grade']
-    #                     tanet_info['identity'] = log['actor']['tanet_info']['identity']
-    #                     tanet_info['seatno'] = log['actor']['tanet_info']['seatno']
-    #                     tanet_info['year'] = log['actor']['tanet_info']['year']
-    #                     tanet_info['semester'] = log['actor']['tanet_info']['semester']
-    #                     tanet_info['classno'] = log['actor']['tanet_info']['classno']
-    #                     db_lab.insertDataToTanetInfo(tanet_info)
-    #                     db_ncu.insertDataToTanetInfo(tanet_info)
-    #
-    #                 cookie_id = int(ids[1]) + 1
-    #                 actor = dict()
-    #                 actor['id'] = actor_id
-    #                 actor['login_method'] = log['actor']['login_method']
-    #                 actor['uid'] = log['actor']['uid']
-    #                 actor['session'] = log['actor']['session']
-    #                 actor['role'] = log['actor']['role']
-    #                 actor['category'] = log['actor']['category']
-    #                 actor['grade'] = log['actor']['grade']
-    #                 actor['city'] = log['actor']['city']
-    #                 actor['district'] = log['actor']['district']
-    #                 actor['school'] = log['actor']['school']
-    #                 actor['ip'] = log['actor']['ip']
-    #                 actor['tanet_info_id'] = tanet_info_id
-    #                 actor['cookie_id'] = cookie_id
-    #                 db_lab.insertDataToActor(actor)
-    #                 db_ncu.insertDataToActor(actor)
-    #
-    #                 cookie = dict()
-    #                 cookie['id'] = cookie_id
-    #                 cookie['_fbc'] = None
-    #                 if '_fbc' in log['actor']['cookie'].keys():
-    #                     cookie['_fbc'] = log['actor']['cookie']['_fbc']
-    #
-    #                 cookie['_fbp'] = None
-    #                 if '_fbp' in log['actor']['cookie'].keys():
-    #                     cookie['_fbp'] = log['actor']['cookie']['_fbp']
-    #
-    #                 cookie['_ga_E0PD0RQE64'] = None
-    #                 if '_ga_E0PD0RQE64' in log['actor']['cookie'].keys():
-    #                     cookie['_ga_E0PD0RQE64'] = log['actor']['cookie']['_ga_E0PD0RQE64']
-    #
-    #                 cookie['MoodleSession'] = None
-    #                 if 'MoodleSession' in log['actor']['cookie'].keys():
-    #                     cookie['MoodleSession'] = log['actor']['cookie']['MoodleSession']
-    #
-    #                 cookie['_ga'] = None
-    #                 if '_ga' in log['actor']['cookie'].keys():
-    #                     cookie['_ga'] = log['actor']['cookie']['_ga']
-    #                 db_lab.insertDataToCookie(cookie)
-    #                 db_ncu.insertDataToCookie(cookie)
-    #
-    #                 action = dict()
-    #                 action['id'] = action_id
-    #                 action['activity'] = log['action']['activity']
-    #                 action['uri'] = log['action']['uri']
-    #                 action['cm_id'] = log['action']['cm_id']
-    #                 action['cm_name'] = log['action']['cm_name']
-    #                 action['categories_id'] = log['action']['categories_id']
-    #                 action['categories_name'] = log['action']['categories_name']
-    #                 action['course_id'] = log['action']['course_id']
-    #                 action['course_name'] = log['action']['course_name']
-    #                 action['section_id'] = log['action']['section_id']
-    #                 action['section_name'] = log['action']['section_name']
-    #                 action['event_info_id'] = None
-    #                 if log['action']['event_info'] != 'null':
-    #                     ids = db_lab.getActionElementId()
-    #                     event_info_id = int(ids[0]) + 1
-    #                     action['event_info_id'] = event_info_id
-    #
-    #                     event_info = dict()
-    #                     event_info['id'] = event_info_id
-    #
-    #                     event_info['sentences_time'] = None
-    #                     event_info['sentence'] = None
-    #                     event_info['passed'] = None
-    #                     event_info['results'] = None
-    #                     event_info['results_score'] = None
-    #                     event_info['results_errorWords'] = None
-    #                     if log['action']['activity'] == 'asr':
-    #                         event_info['sentences_time'] = log['action']['event_info']['sentences_time']
-    #                         event_info['sentence'] = log['action']['event_info']['sentence']
-    #                         event_info['passed'] = log['action']['event_info']['passed']
-    #                         event_info['results'] = log['action']['event_info']['results']
-    #                         event_info['results_score'] = log['action']['event_info']['results_score']
-    #                         event_info['results_errorWords'] = log['action']['event_info']['results_errorWords']
-    #
-    #                     event_info['input_content'] = None
-    #                     event_info['original_sentence'] = None
-    #                     event_info['revised_sentence'] = None
-    #                     event_info['feedback'] = None
-    #                     if log['action']['activity'] == 'writing':
-    #                         event_info['input_content'] = log['action']['event_info']['input_content']
-    #                         event_info['original_sentence'] = log['action']['event_info']['original_sentence']
-    #                         event_info['revised_sentence'] = log['action']['event_info']['revised_sentence']
-    #                         event_info['feedback'] = log['action']['event_info']['feedback']
-    #
-    #                     event_info['message'] = None
-    #                     event_info['target'] = None
-    #                     event_info['source'] = None
-    #                     event_info['content_recognized'] = None
-    #                     if log['action']['activity'] == 'chat_robot':
-    #                         event_info['message'] = log['action']['event_info']['message']
-    #                         event_info['target'] = log['action']['event_info']['target']
-    #                         event_info['source'] = log['action']['event_info']['source']
-    #                         event_info['content_recognized'] = log['action']['event_info']['content_recognized']
-    #                     db_lab.insertDataToEventInfo(event_info)
-    #                     db_ncu.insertDataToEventInfo(event_info)
-    #                 db_lab.insertDataToAction(action)
-    #                 db_ncu.insertDataToAction(action)
 
     def readLogData(self):
         for jsonFile in glob.glob(self.searchPath):
             with open(jsonFile, mode='r', encoding='utf-8') as file:
                 logList = json.load(file)
                 filename = os.path.basename(jsonFile)
-                print(filename)
+                print(f"處理檔案: {filename} (共 {len(logList)} 筆記錄)")
+                
+                # 先刪除該檔案的所有舊資料
+                print(f"🗑️  刪除檔案 {filename} 的舊資料...")
+                try:
+                    deleted_counts = db_lab.delete_all_data_by_filename(filename)
+                    total_deleted = sum(deleted_counts.values())
+                    print(f"✅ 已刪除 {total_deleted} 筆舊資料")
+                except Exception as e:
+                    print(f"⚠️  刪除舊資料時發生錯誤: {e}")
+                    # 繼續處理，不中斷流程
+                
                 for log in logList:
                     timestamp = int(log['client_event_time'])
                     dt = datetime.utcfromtimestamp(timestamp)
 
                     # create client_event data
-                    ids = db_ncu.getClientEventElementId()
+                    # ids = db_ncu.getClientEventElementId()
+                    ids = db_lab.getClientEventElementId()  # 改用lab的方法
                     video_info_currentTime = -1
                     if 'video_info' in log.keys():
                         video_info_currentTime = log['video_info']['currentTime']
-                    new = db_ncu.checkClientEventNewRecord(dt, log['server_sign_token'], log['action']['activity'], video_info_currentTime)
-                    if new[0] == 0:
+                    
+                    # 直接分配新 ID，不需要檢查是否存在
                         actor_id = int(ids[0]) + 1
                         action_id = int(ids[1]) + 1
                         result_id = int(ids[2]) + 1
                         video_id = int(ids[3]) + 1
-                    else:
-                        actor_id = int(ids[0])
-                        action_id = int(ids[1])
-                        result_id = int(ids[2])
-                        video_id = int(ids[3])
 
                     client_event = dict()
                     client_event['client_event_timestamp'] = timestamp
@@ -276,14 +72,12 @@ class Bigdata:
                     client_event['filename'] = filename
 
                     # create actor data
-                    ids = db_ncu.getActorElementId()
-                    new = db_ncu.checkActorNewRecord(actor_id)
-                    if new[0] == 0:
-                        tanet_info_id = int(ids[0]) + 1
-                        cookie_id = int(ids[1]) + 1
-                    else:
-                        tanet_info_id = int(ids[0])
-                        cookie_id = int(ids[1])
+                    # ids = db_ncu.getActorElementId()
+                    ids = db_lab.getActorElementId()  # 改用lab的方法
+                    
+                    # 直接分配新 ID，不需要檢查是否存在
+                    tanet_info_id = int(ids[0]) + 1
+                    cookie_id = int(ids[1]) + 1
 
                     if (log['actor']['login_method'] == 'TANET') and (isinstance(log['actor']['tanet_info'], dict)):
                         tanet_info = dict()
@@ -301,6 +95,7 @@ class Bigdata:
                         tanet_info['year'] = log['actor']['tanet_info']['year']
                         tanet_info['semester'] = log['actor']['tanet_info']['semester']
                         tanet_info['classno'] = log['actor']['tanet_info']['classno']
+                        tanet_info['filename'] = filename
                     else:
                         tanet_info_id = None
 
@@ -330,6 +125,8 @@ class Bigdata:
                         cookie['cf_clearance'] = None
                         if 'cf_clearance' in log['actor']['cookie'].keys():
                             cookie['cf_clearance'] = log['actor']['cookie']['cf_clearance']
+                        
+                        cookie['filename'] = filename
                     else:
                         cookie_id = None
 
@@ -347,6 +144,7 @@ class Bigdata:
                     actor['ip'] = log['actor']['ip']
                     actor['tanet_info_id'] = tanet_info_id
                     actor['cookie_id'] = cookie_id
+                    actor['filename'] = filename
 
                     action = dict()
                     action['id'] = action_id
@@ -361,19 +159,20 @@ class Bigdata:
                     action['section_id'] = log['action']['section_id']
                     action['section_name'] = log['action']['section_name']
                     action['event_info_id'] = None
+                    action['filename'] = filename
+                    
                     if (log['action']['event_info'] is not None) and (isinstance(log['action']['event_info'], dict)):
-                        ids = db_ncu.getActionElementId()
-                        new = db_ncu.checkActionNewRecord(action_id)
+                        # ids = db_ncu.getActionElementId()
+                        ids = db_lab.getActionElementId()  # 改用lab的方法
 
-                        if new[0] == 0:
-                            event_info_id = int(ids[0]) + 1
-                        else:
-                            event_info_id = int(ids[0])
+                        # 直接分配新 ID，不需要檢查是否存在
+                        event_info_id = int(ids[0]) + 1
 
                         action['event_info_id'] = event_info_id
 
                         event_info = dict()
                         event_info['id'] = event_info_id
+                        event_info['filename'] = filename
 
                         event_info['sentences_time'] = None
                         event_info['sentence'] = None
@@ -403,16 +202,14 @@ class Bigdata:
                             event_info['input_content'] = log['action']['event_info']['input_content']
                             if len(log['action']['event_info']['sentences']) > 0:
                                 event_info['sentences'] = 1
-                                new = db_ncu.checkSentencesNewRecord(event_info_id)
-                                if new[0] == 0:
+                                for s in log['action']['event_info']['sentences']:
                                     sentences = dict()
-                                    for s in log['action']['event_info']['sentences']:
-                                        sentences['event_info_id'] = event_info_id
-                                        sentences['original_sentence'] = s['original_sentence']
-                                        sentences['revised_sentence'] = s['revised_sentence']
-                                        sentences['feedback'] = s['feedback']
-                                        db_ncu.insertDataToSentences(sentences)
-                                        db_lab.insertDataToSentences(sentences)
+                                    sentences['event_info_id'] = event_info_id
+                                    sentences['original_sentence'] = s['original_sentence']
+                                    sentences['revised_sentence'] = s['revised_sentence']
+                                    sentences['feedback'] = s['feedback']
+                                    sentences['filename'] = filename
+                                    db_lab.insertDataToSentences(sentences)
 
                         event_info['message'] = None
                         event_info['target'] = None
@@ -449,6 +246,7 @@ class Bigdata:
                     result['success'] = log['result']['success']
                     result['interactionType'] = log['result']['interactionType']
                     result['correctResponsesPattern'] = log['result']['correctResponsesPattern']
+                    result['filename'] = filename
 
                     if 'video_info' in log.keys():
                         client_event['video_id'] = video_id
@@ -458,25 +256,9 @@ class Bigdata:
                         video_info['currentSrc'] = log['video_info']['currentSrc']
                         video_info['playbackRate'] = log['video_info']['playbackRate']
                         video_info['currentTime'] = log['video_info']['currentTime']
+                        video_info['filename'] = filename
 
                     print(client_event)
-
-                    # insert to ncu db
-                    start = time.time()
-                    db_ncu.insertDataToClientEvent(client_event)
-                    db_ncu.insertDataToActor(actor)
-                    if actor['tanet_info_id'] is not None:
-                        db_ncu.insertDataToTanetInfo(tanet_info)
-                    if len(log['actor']['cookie']) > 0:
-                        db_ncu.insertDataToCookie(cookie)
-                    db_ncu.insertDataToAction(action)
-                    if action['event_info_id'] is not None:
-                        db_ncu.insertDataToEventInfo(event_info)
-                    db_ncu.insertDataToResult(result)
-                    if client_event['video_id'] is not None:
-                        db_ncu.insertDataToVideoInfo(video_info)
-                    end = time.time()
-                    print("db_ncu 執行 insert 時間：%f 秒" % (end - start))
 
                     # insert to lab db
                     start = time.time()
@@ -502,5 +284,5 @@ class Bigdata:
 
         db_lab.cursor.close()
         db_lab.db.close()
-        db_ncu.cursor.close()
-        db_ncu.db.close()
+        # db_ncu.cursor.close()
+        # db_ncu.db.close()

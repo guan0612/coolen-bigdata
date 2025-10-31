@@ -3,3 +3,17 @@
 .idea/
 /backend/static/
 /backend/templates/
+
+# Data directories
+data/
+logs/
+
+# Excel reports
+*.xlsx
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
