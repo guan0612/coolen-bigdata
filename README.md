@@ -157,15 +157,6 @@ ORDER BY ai_course_name, month,
 ### 相關資訊
 - **外部 API**: https://widm-server.duckdns.org
 - **江翠機房連線方式**: widm server(使用anydesk遠端) --> cyberark --> connect by PSM-Putty --> 進到江翠機房 login ncu-bigdatauser
-(cyberark登陸還會需要手機綁定驗證，這個我正在找威秀申請相關文件)
-
-|  | id | passwd |
-|---------|--------|------|
-| widm server(140.115.54.44) | coolen | ru4cj84coolen |
-| machine 9(20.89.171.94) | service_admin | 1!f#2hfh2JhIIUe |
-| anydesk(連線至widm server) | 1482304823 | coolen2025 |
-| 江翠機房 | ncu-bigdatauser | !Je0017cooleng |
-| cyberark | ncu | nnccuu@Je0017 |
 
 ---
 
