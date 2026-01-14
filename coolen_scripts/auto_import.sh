@@ -102,9 +102,7 @@ import_data() {
         
         if [ "$status" = "accepted" ] && [ -n "$task_id" ] && [ "$task_id" != "None" ]; then
             log_message "任務 ID: $task_id"
-            
-            # 監控任務狀態
-            monitor_task "$task_id"
+            log_message "任務已加入佇列（不進行狀態輪詢）"
         else
             log_message "沒有資料需要匯入或任務未被接受"
         fi
@@ -112,46 +110,6 @@ import_data() {
         log_message "匯入 API 調用失敗"
         return 1
     fi
-}
-
-# 監控任務狀態
-monitor_task() {
-    local task_id="$1"
-    local max_wait=3600  # 最大等待 1 小時
-    local wait_time=0
-    local check_interval=30  # 每 30 秒檢查一次
-    
-    log_message "開始監控任務 $task_id 的狀態..."
-    
-    while [ $wait_time -lt $max_wait ]; do
-        local status_response=$(curl -s "$SERVER_URL/checkImportStatus")
-        local status=$(echo "$status_response" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
-        
-        case "$status" in
-            "completed")
-                log_message "任務 $task_id 已完成"
-                return 0
-                ;;
-            "error")
-                local error=$(echo "$status_response" | grep -o '"error":"[^"]*"' | cut -d'"' -f4)
-                log_message "任務 $task_id 失敗: $error"
-                return 1
-                ;;
-            "running"|"queued")
-                log_message "任務 $task_id 狀態: $status，繼續等待..."
-                sleep $check_interval
-                wait_time=$((wait_time + check_interval))
-                ;;
-            *)
-                log_message "未知任務狀態: $status"
-                sleep $check_interval
-                wait_time=$((wait_time + check_interval))
-                ;;
-        esac
-    done
-    
-    log_message "任務 $task_id 監控超時"
-    return 1
 }
 
 # 主執行函數
