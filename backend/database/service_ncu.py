@@ -23,20 +23,32 @@ class ServiceNCU:
         return table_name in tables
 
     def createTable_clientEvent(self):
-        sql = 'CREATE TABLE IF NOT EXISTS client_event' \
-              '(client_event_timestamp INT NOT NULL,' \
-              ' client_event_time DATETIME NOT NULL,' \
-              ' server_sign_token VARCHAR(100) NOT NULL,' \
-              ' action_activity VARCHAR(50) NOT NULL,' \
-              ' video_info_currentTime INT NOT NULL,' \
-              ' encrypt BOOLEAN NULL,' \
-              ' actor_id BIGINT NULL,' \
-              ' action_id BIGINT NULL,' \
-              ' result_id BIGINT NULL,' \
-              ' video_info_id BIGINT NULL,' \
-              ' filename VARCHAR(20) NOT NULL,' \
-              ' CONSTRAINT PK_CLIENT_EVENT PRIMARY KEY (client_event_timestamp, server_sign_token, action_activity, video_info_currentTime));'
+        sql = (
+            'CREATE TABLE IF NOT EXISTS client_event'
+            '(client_event_timestamp INT NOT NULL,'
+            ' client_event_time DATETIME NOT NULL,'
+            ' server_sign_token VARCHAR(100) NOT NULL,'
+            ' action_activity VARCHAR(50) NOT NULL,'
+            ' video_info_currentTime INT NOT NULL,'
+            ' encrypt BOOLEAN NULL,'
+            ' actor_id BIGINT NULL,'
+            ' action_id BIGINT NULL,'
+            ' result_id BIGINT NULL,'
+            ' video_info_id BIGINT NULL,'
+            ' filename VARCHAR(20) NOT NULL,'
+            ' CONSTRAINT PK_CLIENT_EVENT PRIMARY KEY '
+            ' (client_event_timestamp, server_sign_token, action_activity, video_info_currentTime),'
+            ' INDEX IDX_CLIENT_EVENT_FILENAME (filename)'
+            ');'
+        )
         self.cursor.execute(sql)
+        try:
+            self.cursor.execute(
+                "CREATE INDEX IDX_CLIENT_EVENT_FILENAME ON client_event (filename)"
+            )
+        except mysql.connector.errors.DatabaseError as e:
+            if e.errno != 1061:  # duplicated key name
+                raise
 
     def createTable_actor(self):
         sql = 'CREATE TABLE IF NOT EXISTS actor' \
@@ -832,6 +844,174 @@ class ServiceNCU:
                 row.get('student_level'),
                 month_value,
                 row.get('user_count'),
+                batch_date
+            )
+            values_list.append(values)
+        
+        if values_list:
+            self.cursor.executemany(sql, values_list)
+            self.db.commit()
+        
+        return len(values_list)
+
+    def createTable_login_stats(self):
+        """建立登入統計表"""
+        sql = '''CREATE TABLE IF NOT EXISTS login_stats (
+            id BIGINT NOT NULL AUTO_INCREMENT,
+            month VARCHAR(7) NOT NULL COMMENT '月份：YYYY-MM',
+            student_level VARCHAR(10) NOT NULL COMMENT '學制：國小、國中、高中職、其他',
+            login_instances INT NOT NULL DEFAULT 0 COMMENT '登入人次',
+            login_users INT NOT NULL DEFAULT 0 COMMENT '登入人數',
+            cumulative_users INT NOT NULL DEFAULT 0 COMMENT '累計登入人數',
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            batch_date DATE NOT NULL,
+            CONSTRAINT PK_LOGIN_STATS PRIMARY KEY (id),
+            INDEX IDX_LOGIN_STATS_MONTH (month),
+            INDEX IDX_LOGIN_STATS_BATCH (batch_date),
+            UNIQUE KEY UK_LOGIN_STATS (month, student_level)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;'''
+        self.cursor.execute(sql)
+
+    def insert_login_stats(self, stats_data, batch_date):
+        """批次插入登入統計資料"""
+        if not stats_data:
+            return 0
+        
+        sql = '''INSERT INTO login_stats 
+                (month, student_level, login_instances, login_users, cumulative_users, batch_date) 
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE 
+                    login_instances = VALUES(login_instances),
+                    login_users = VALUES(login_users),
+                    cumulative_users = VALUES(cumulative_users),
+                    batch_date = VALUES(batch_date),
+                    created_at = CURRENT_TIMESTAMP'''
+        
+        values_list = []
+        for row in stats_data:
+            month_value = row.get('month')
+            if month_value is None or month_value == '':
+                continue
+            
+            values = (
+                month_value,
+                row.get('student_level'),
+                row.get('login_instances', 0),
+                row.get('login_users', 0),
+                row.get('cumulative_users', 0),
+                batch_date
+            )
+            values_list.append(values)
+        
+        if values_list:
+            self.cursor.executemany(sql, values_list)
+            self.db.commit()
+        
+        return len(values_list)
+
+    def createTable_usage_stats(self):
+        """建立使用統計表"""
+        sql = '''CREATE TABLE IF NOT EXISTS usage_stats (
+            id BIGINT NOT NULL AUTO_INCREMENT,
+            month VARCHAR(7) NOT NULL COMMENT '月份：YYYY-MM',
+            student_level VARCHAR(10) NOT NULL COMMENT '學制：國小、國中、高中職、其他',
+            usage_instances INT NOT NULL DEFAULT 0 COMMENT '使用人次',
+            usage_users INT NOT NULL DEFAULT 0 COMMENT '使用人數',
+            cumulative_users INT NOT NULL DEFAULT 0 COMMENT '累計使用人數',
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            batch_date DATE NOT NULL,
+            CONSTRAINT PK_USAGE_STATS PRIMARY KEY (id),
+            INDEX IDX_USAGE_STATS_MONTH (month),
+            INDEX IDX_USAGE_STATS_BATCH (batch_date),
+            UNIQUE KEY UK_USAGE_STATS (month, student_level)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;'''
+        self.cursor.execute(sql)
+
+    def insert_usage_stats(self, stats_data, batch_date):
+        """批次插入使用統計資料"""
+        if not stats_data:
+            return 0
+        
+        sql = '''INSERT INTO usage_stats 
+                (month, student_level, usage_instances, usage_users, cumulative_users, batch_date) 
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE 
+                    usage_instances = VALUES(usage_instances),
+                    usage_users = VALUES(usage_users),
+                    cumulative_users = VALUES(cumulative_users),
+                    batch_date = VALUES(batch_date),
+                    created_at = CURRENT_TIMESTAMP'''
+        
+        values_list = []
+        for row in stats_data:
+            month_value = row.get('month')
+            if month_value is None or month_value == '':
+                continue
+            
+            values = (
+                month_value,
+                row.get('student_level'),
+                row.get('usage_instances', 0),
+                row.get('usage_users', 0),
+                row.get('cumulative_users', 0),
+                batch_date
+            )
+            values_list.append(values)
+        
+        if values_list:
+            self.cursor.executemany(sql, values_list)
+            self.db.commit()
+        
+        return len(values_list)
+
+    def createTable_coolebot_stats(self):
+        """建立 CoolE Bot 統計表"""
+        sql = '''CREATE TABLE IF NOT EXISTS coolebot_stats (
+            id BIGINT NOT NULL AUTO_INCREMENT,
+            month VARCHAR(7) NOT NULL COMMENT '月份：YYYY-MM',
+            student_level VARCHAR(10) NOT NULL COMMENT '學制：國小、國中、高中職、其他',
+            usage_instances INT NOT NULL DEFAULT 0 COMMENT '使用人次',
+            usage_users INT NOT NULL DEFAULT 0 COMMENT '使用人數',
+            cumulative_users INT NOT NULL DEFAULT 0 COMMENT '累計使用人數',
+            avg_dialog_turns DECIMAL(10, 2) NOT NULL DEFAULT 0 COMMENT '平均來回對話次數',
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            batch_date DATE NOT NULL,
+            CONSTRAINT PK_COOLEBOT_STATS PRIMARY KEY (id),
+            INDEX IDX_COOLEBOT_STATS_MONTH (month),
+            INDEX IDX_COOLEBOT_STATS_BATCH (batch_date),
+            UNIQUE KEY UK_COOLEBOT_STATS (month, student_level)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;'''
+        self.cursor.execute(sql)
+
+    def insert_coolebot_stats(self, stats_data, batch_date):
+        """批次插入 CoolE Bot 統計資料"""
+        if not stats_data:
+            return 0
+        
+        sql = '''INSERT INTO coolebot_stats 
+                (month, student_level, usage_instances, usage_users, cumulative_users, avg_dialog_turns, batch_date) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE 
+                    usage_instances = VALUES(usage_instances),
+                    usage_users = VALUES(usage_users),
+                    cumulative_users = VALUES(cumulative_users),
+                    avg_dialog_turns = VALUES(avg_dialog_turns),
+                    batch_date = VALUES(batch_date),
+                    created_at = CURRENT_TIMESTAMP'''
+        
+        values_list = []
+        for row in stats_data:
+            month_value = row.get('month')
+            if month_value is None or month_value == '':
+                continue
+            
+            values = (
+                month_value,
+                row.get('student_level'),
+                row.get('usage_instances', 0),
+                row.get('usage_users', 0),
+                row.get('cumulative_users', 0),
+                row.get('avg_dialog_turns', 0),
                 batch_date
             )
             values_list.append(values)
