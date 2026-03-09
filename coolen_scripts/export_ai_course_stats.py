@@ -4,8 +4,10 @@ from datetime import datetime
 import sys
 import os
 
-# 添加應用程式路徑
-sys.path.insert(0, '/app')
+# 添加應用程式路徑（不要寫死 /app，避免離開 Docker 後無法執行）
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 # 導入資料庫配置
 from backend.database.config import Config
@@ -19,7 +21,8 @@ config = {
     'user': Config.LAB_DB_USERNAME,
     'password': Config.LAB_DB_PASSWORD,
     'database': Config.LAB_DB_NAME,
-    'charset': 'utf8mb4'
+    'charset': 'utf8mb4',
+    'connection_timeout': 30
 }
 
 # ==================== SQL 查詢（大數據） ====================
@@ -37,15 +40,14 @@ SELECT
         WHEN action.course_id IN ('972', '973', '974', '975') THEN '酷英沉浸式閱讀工具'
     END AS ai_course_name,
     actor.category AS student_level,
-    DATE_FORMAT(FROM_UNIXTIME(CAST(SUBSTRING_INDEX(client_event.server_sign_token, ':', -1) AS UNSIGNED) + 28800), '%Y-%m') AS month,
+    DATE_FORMAT(client_event.client_event_time, '%Y-%m') AS month,
     COUNT(DISTINCT actor.uid) AS user_count
 FROM client_event
 LEFT JOIN action ON client_event.action_id = action.id
 LEFT JOIN actor ON client_event.actor_id = actor.id
 WHERE 
-    client_event.server_sign_token IS NOT NULL 
-    AND client_event.server_sign_token != ''
-    AND client_event.server_sign_token REGEXP '^[^:]+:[^:]+:[0-9]+$'
+    client_event.client_event_time IS NOT NULL
+    AND client_event.client_event_time >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
     AND action.course_id IN (
         '770', '772', '775', '779',
         '941', '942', '943', '944',
@@ -72,8 +74,15 @@ try:
     conn = mysql.connector.connect(**config)
     print("✅ 資料庫連線成功！")
     
-    # 測試連線
+    # 設定 session timeout（避免查詢時間過長導致連線中斷）
     cursor = conn.cursor()
+    cursor.execute("SET SESSION net_read_timeout = 3600")
+    cursor.execute("SET SESSION net_write_timeout = 3600")
+    cursor.execute("SET SESSION wait_timeout = 28800")
+    conn.commit()
+    print("✅ Session timeout 設定完成（net_read=3600s, net_write=3600s, wait=28800s）")
+    
+    # 測試連線
     cursor.execute("SELECT VERSION()")
     version = cursor.fetchone()
     print(f"MySQL 版本: {version[0]}")

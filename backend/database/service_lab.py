@@ -909,6 +909,60 @@ class ServiceLAB:
         
         return len(values_list)
 
+    def createTable_login_stats_daily(self):
+        """建立每日登入統計表"""
+        sql = '''CREATE TABLE IF NOT EXISTS login_stats_daily (
+            id BIGINT NOT NULL AUTO_INCREMENT,
+            stat_date DATE NOT NULL COMMENT '統計日期：YYYY-MM-DD',
+            student_level VARCHAR(10) NOT NULL COMMENT '學制：國小、國中、高中職、其他',
+            login_instances INT NOT NULL DEFAULT 0 COMMENT '登入人次',
+            login_users INT NOT NULL DEFAULT 0 COMMENT '登入人數',
+            cumulative_users INT NOT NULL DEFAULT 0,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            batch_date DATE NOT NULL,
+            CONSTRAINT PK_LOGIN_STATS_DAILY PRIMARY KEY (id),
+            INDEX IDX_LOGIN_STATS_DAILY_DATE (stat_date),
+            INDEX IDX_LOGIN_STATS_DAILY_BATCH (batch_date),
+            UNIQUE KEY UK_LOGIN_STATS_DAILY (stat_date, student_level)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;'''
+        self.cursor.execute(sql)
+
+    def insert_login_stats_daily(self, stats_data, batch_date):
+        """批次插入每日登入統計資料"""
+        if not stats_data:
+            return 0
+        
+        sql = '''INSERT INTO login_stats_daily 
+                (stat_date, student_level, login_instances, login_users, cumulative_users, batch_date) 
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE 
+                    login_instances = VALUES(login_instances),
+                    login_users = VALUES(login_users),
+                    cumulative_users = VALUES(cumulative_users),
+                    batch_date = VALUES(batch_date),
+                    created_at = CURRENT_TIMESTAMP'''
+        
+        values_list = []
+        for row in stats_data:
+            stat_date_value = row.get('stat_date')
+            if stat_date_value is None or stat_date_value == '':
+                continue
+            values = (
+                stat_date_value,
+                row.get('student_level'),
+                row.get('login_instances', 0),
+                row.get('login_users', 0),
+                row.get('cumulative_users', 0),
+                batch_date
+            )
+            values_list.append(values)
+        
+        if values_list:
+            self.cursor.executemany(sql, values_list)
+            self.db.commit()
+        
+        return len(values_list)
+
     def createTable_usage_stats(self):
         """建立使用統計表"""
         sql = '''CREATE TABLE IF NOT EXISTS usage_stats (
@@ -950,6 +1004,61 @@ class ServiceLAB:
             
             values = (
                 month_value,
+                row.get('student_level'),
+                row.get('usage_instances', 0),
+                row.get('usage_users', 0),
+                row.get('cumulative_users', 0),
+                batch_date
+            )
+            values_list.append(values)
+        
+        if values_list:
+            self.cursor.executemany(sql, values_list)
+            self.db.commit()
+        
+        return len(values_list)
+
+    def createTable_usage_stats_daily(self):
+        """建立每日使用統計表"""
+        sql = '''CREATE TABLE IF NOT EXISTS usage_stats_daily (
+            id BIGINT NOT NULL AUTO_INCREMENT,
+            stat_date DATE NOT NULL COMMENT '統計日期：YYYY-MM-DD',
+            student_level VARCHAR(10) NOT NULL COMMENT '學制：國小、國中、高中職、其他',
+            usage_instances INT NOT NULL DEFAULT 0 COMMENT '使用人次',
+            usage_users INT NOT NULL DEFAULT 0 COMMENT '使用人數',
+            cumulative_users INT NOT NULL DEFAULT 0 COMMENT '累計使用人數（至該日止）',
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            batch_date DATE NOT NULL,
+            CONSTRAINT PK_USAGE_STATS_DAILY PRIMARY KEY (id),
+            INDEX IDX_USAGE_STATS_DAILY_DATE (stat_date),
+            INDEX IDX_USAGE_STATS_DAILY_BATCH (batch_date),
+            UNIQUE KEY UK_USAGE_STATS_DAILY (stat_date, student_level)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;'''
+        self.cursor.execute(sql)
+
+    def insert_usage_stats_daily(self, stats_data, batch_date):
+        """批次插入每日使用統計資料"""
+        if not stats_data:
+            return 0
+        
+        sql = '''INSERT INTO usage_stats_daily 
+                (stat_date, student_level, usage_instances, usage_users, cumulative_users, batch_date) 
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE 
+                    usage_instances = VALUES(usage_instances),
+                    usage_users = VALUES(usage_users),
+                    cumulative_users = VALUES(cumulative_users),
+                    batch_date = VALUES(batch_date),
+                    created_at = CURRENT_TIMESTAMP'''
+        
+        values_list = []
+        for row in stats_data:
+            stat_date_value = row.get('stat_date')
+            if stat_date_value is None or stat_date_value == '':
+                continue
+            
+            values = (
+                stat_date_value,
                 row.get('student_level'),
                 row.get('usage_instances', 0),
                 row.get('usage_users', 0),
@@ -1021,3 +1130,79 @@ class ServiceLAB:
             self.db.commit()
         
         return len(values_list)
+
+    def createTable_coolebot_stats_daily(self):
+        sql = '''CREATE TABLE IF NOT EXISTS coolebot_stats_daily (
+            id BIGINT NOT NULL AUTO_INCREMENT,
+            stat_date DATE NOT NULL,
+            student_level VARCHAR(10) NOT NULL,
+            usage_instances INT NOT NULL DEFAULT 0,
+            usage_users INT NOT NULL DEFAULT 0,
+            cumulative_users INT NOT NULL DEFAULT 0,
+            avg_dialog_turns DECIMAL(10, 2) NOT NULL DEFAULT 0,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            batch_date DATE NOT NULL,
+            CONSTRAINT PK_COOLEBOT_STATS_DAILY PRIMARY KEY (id),
+            INDEX IDX_COOLEBOT_STATS_DAILY_DATE (stat_date),
+            UNIQUE KEY UK_COOLEBOT_STATS_DAILY (stat_date, student_level)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;'''
+        self.cursor.execute(sql)
+
+    def insert_coolebot_stats_daily(self, stats_data, batch_date):
+        if not stats_data:
+            return 0
+        sql = '''INSERT INTO coolebot_stats_daily 
+                (stat_date, student_level, usage_instances, usage_users, cumulative_users, avg_dialog_turns, batch_date) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE 
+                    usage_instances = VALUES(usage_instances),
+                    usage_users = VALUES(usage_users),
+                    cumulative_users = VALUES(cumulative_users),
+                    avg_dialog_turns = VALUES(avg_dialog_turns),
+                    batch_date = VALUES(batch_date),
+                    created_at = CURRENT_TIMESTAMP'''
+        values_list = []
+        for row in stats_data:
+            stat_date_value = row.get('stat_date')
+            if stat_date_value is None or stat_date_value == '':
+                continue
+            values = (
+                stat_date_value,
+                row.get('student_level'),
+                row.get('usage_instances', 0),
+                row.get('usage_users', 0),
+                row.get('cumulative_users', 0),
+                row.get('avg_dialog_turns', 0),
+                batch_date
+            )
+            values_list.append(values)
+        if values_list:
+            self.cursor.executemany(sql, values_list)
+            self.db.commit()
+        return len(values_list)
+
+    def createTable_timestamp_fix_baseline(self):
+        """建立時間戳記修正基準時間記錄表"""
+        sql = '''CREATE TABLE IF NOT EXISTS timestamp_fix_baseline (
+            server_sign_token VARCHAR(255) PRIMARY KEY,
+            baseline_timestamp INT NOT NULL COMMENT '該 token 的歷史最小原始 timestamp',
+            server_token_unix INT NOT NULL COMMENT '該 token 的 unix 秒數',
+            fixed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_server_token_unix (server_token_unix)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='時間戳記修正基準時間記錄表';'''
+        self.cursor.execute(sql)
+    
+    def createTable_timestamp_fix_progress(self):
+        """建立時間戳記修正進度記錄表"""
+        sql = '''CREATE TABLE IF NOT EXISTS timestamp_fix_progress (
+            db_name VARCHAR(50) PRIMARY KEY COMMENT '資料庫名稱（LAB 或 NCU）',
+            last_processed_timestamp INT NOT NULL DEFAULT 0 COMMENT '最後處理到的 timestamp',
+            last_processed_batch_num INT NOT NULL DEFAULT 0 COMMENT '最後處理的批次編號',
+            total_processed BIGINT NOT NULL DEFAULT 0 COMMENT '總處理記錄數',
+            total_updated BIGINT NOT NULL DEFAULT 0 COMMENT '總成功更新記錄數',
+            total_conflicts BIGINT NOT NULL DEFAULT 0 COMMENT '總衝突記錄數',
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='時間戳記修正進度記錄表';'''
+        self.cursor.execute(sql)

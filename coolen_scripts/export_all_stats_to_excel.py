@@ -7,8 +7,10 @@ from openpyxl.utils import get_column_letter
 import sys
 import os
 
-# 添加應用程式路徑
-sys.path.insert(0, '/app')
+# 添加應用程式路徑（不要寫死 /app，避免離開 Docker 後無法執行）
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 # 導入資料庫配置
 from backend.database.config import Config
